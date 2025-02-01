@@ -1,38 +1,21 @@
-import json
-from http.server import BaseHTTPRequestHandler
-import urllib.parse
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 
-# Load student data from the JSON file
-def load_data():
-    with open('q-vercel-python.json', 'r') as file:
-        data = json.load(file)
-    return data
+app = Flask(__name__)
+CORS(app)  # Enable CORS for all origins
 
-# Handler class to process incoming requests
-class handler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        # Parse the query parameters
-        query = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+# Example student marks data (for 100 students)
+student_marks = {
+    "Alice": 90, "Bob": 80, "Charlie": 70, "David": 60, "Eve": 50,
+    # Add more students and marks as needed
+}
 
-        # Get 'name' parameters from the query string
-        names = query.get('name', [])
+@app.route('/api', methods=['GET'])
+def get_marks():
+    names = request.args.getlist('name')
+    marks = [student_marks.get(name, None) for name in names]
+    return jsonify({"marks": marks})
 
-        # Load data from the JSON file
-        data = load_data()
+if __name__ == '__main__':
+    app.run(debug=True)
 
-        # Prepare the result dictionary
-        result = {"marks": []}
-        for name in names:
-            # Find the marks for each name
-            for entry in data:
-                if entry["name"] == name:
-                    result["marks"].append(entry["marks"])
-
-        # Send the response header
-        self.send_response(200)
-        self.send_header('Content-type', 'application/json')
-        self.send_header('Access-Control-Allow-Origin', '*')  # Enable CORS for any origin
-        self.end_headers()
-
-        # Send the JSON response
-        self.wfile.write(json.dumps(result).encode('utf-8'))
